@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026학년도 2학년 다트 대항전 대시보드</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .active-tab { border-bottom: 4px solid #3B82F6; color: #1D4ED8; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen">
+
+    <!-- 상단 헤더 -->
+    <header class="bg-indigo-900 text-white shadow-lg p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-extrabold flex items-center gap-3">
+                <i class="fa-solid font-bullseye text-red-500 text-3xl"></i>
+                2026학년도 2학년 다트 대항전
+            </h1>
+            <span class="bg-indigo-700 px-3 py-1 rounded-full text-sm font-medium">9월 28일 ~ 10월 6일</span>
+        </div>
+    </header>
+
+    <!-- 네비게이션 탭 -->
+    <nav class="bg-white shadow-md mb-6">
+        <div class="max-w-7xl mx-auto flex border-b">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="flex-1 py-4 text-center text-gray-600 hover:text-blue-600 active-tab font-semibold">
+                <i class="fa-solid fa-trophy mr-2"></i>종합 순위
+            </button>
+            <button onclick="switchTab('relay')" id="tab-relay" class="flex-1 py-4 text-center text-gray-600 hover:text-blue-600 font-semibold">
+                <i class="fa-solid fa-stopwatch mr-2"></i>제1경기 (릴레이)
+            </button>
+            <button onclick="switchTab('game501')" id="tab-game501" class="flex-1 py-4 text-center text-gray-600 hover:text-blue-600 font-semibold">
+                <i class="fa-solid fa-crosshair mr-2"></i>제2경기 (501 경기)
+            </button>
+            <button onclick="switchTab('bracket')" id="tab-bracket" class="flex-1 py-4 text-center text-gray-600 hover:text-blue-600 font-semibold">
+                <i class="fa-solid fa-sitemap mr-2"></i>토너먼트 대진표
+            </button>
+        </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="max-w-7xl mx-auto px-4 pb-12">
+
+        <!-- 1. 종합 순위 대시보드 -->
+        <section id="sec-dashboard" class="space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-ranking-star text-yellow-500"></i> 학급별 종합 순위표
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-center border-collapse">
+                        <thead>
+                            <tr class="bg-indigo-50 border-b-2 border-indigo-200 text-indigo-900">
+                                <th class="p-3">순위</th>
+                                <th class="p-3">학급</th>
+                                <th class="p-3">제1경기(릴레이) 점수</th>
+                                <th class="p-3">제2경기(501) 점수</th>
+                                <th class="p-3">종합 총점</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overall-rank-table" class="divide-y text-gray-700 font-semibold">
+                            <!-- JS 연산으로 채워짐 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 제1경기 : 다트 릴레이 -->
+        <section id="sec-relay" class="hidden space-y-6">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- 입력 폼 -->
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">릴레이 기록 입력 (운영진용)</h2>
+                    <form id="relay-form" class="space-y-4" onsubmit="saveRelayData(event)">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">학급 선택</label>
+                            <select id="relay-class" class="w-full mt-1 p-2 border rounded-md">
+                                <option value="1">1반</option>
+                                <option value="2">2반</option>
+                                <option value="3">3반</option>
+                                <option value="4">4반</option>
+                                <option value="5">5반</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">일반 득점 (개수)</label>
+                            <input type="number" id="relay-normal" value="0" min="0" class="w-full mt-1 p-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">불(BULL) 득점 (개수)</label>
+                            <input type="number" id="relay-bull" value="0" min="0" class="w-full mt-1 p-2 border rounded-md" required>
+                            <p class="text-xs text-blue-600 mt-1">* 1개당 3개 환산 처리</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">소요 시간 (초)</label>
+                            <input type="number" id="relay-time" value="80" min="0" max="80" class="w-full mt-1 p-2 border rounded-md" required>
+                            <p class="text-xs text-blue-600 mt-1">* 제한시간 80초 대비 단축 초당 +1개 추가</p>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md font-bold hover:bg-indigo-700">기록 저장</button>
+                    </form>
+                </div>
+
+                <!-- 릴레이 결과 리더보드 -->
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">릴레이 경기 결과</h2>
+                    <table class="w-full text-center border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 text-sm">
+                                <th class="p-2">학급</th>
+                                <th class="p-2">일반</th>
+                                <th class="p-2">BULL(x3)</th>
+                                <th class="p-2">시간가산</th>
+                                <th class="p-2">총점</th>
+                            </tr>
+                        </thead>
+                        <tbody id="relay-score-table" class="divide-y text-sm">
+                            <!-- JS 연산 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 제2경기 : 501점 스코어키퍼 -->
+        <section id="sec-game501" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">501 경기 스코어보드</h2>
+                    <div class="flex gap-2">
+                        <select id="select-501-match" class="p-2 border rounded-md text-sm font-semibold" onchange="load501Match()">
+                            <option value="m1">예선 1경기 (1조 A팀 vs B팀)</option>
+                            <option value="m2">예선 2경기 (2조 A팀 vs B팀)</option>
+                            <option value="m3">예선 3경기 (1조 C팀 vs D팀)</option>
+                            <option value="m4">예선 4경기 (2조 C팀 vs D팀)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- 팀 A 카운터 -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
+                        <h3 id="teamA-name" class="text-xl font-bold text-indigo-900 mb-2">팀 A</h3>
+                        <div id="teamA-score" class="text-6xl font-black text-red-600 my-4">501</div>
+                        <div class="space-y-2 text-left">
+                            <label class="text-xs font-bold text-gray-500">이번 턴 득점 (1발/2발/3발 합계)</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="teamA-turn-score" placeholder="점수 입력" class="p-2 border rounded w-full">
+                                <button onclick="submit501Score('A')" class="bg-indigo-600 text-white px-4 rounded font-bold hover:bg-indigo-700">차감</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 팀 B 카운터 -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
+                        <h3 id="teamB-name" class="text-xl font-bold text-indigo-900 mb-2">팀 B</h3>
+                        <div id="teamB-score" class="text-6xl font-black text-red-600 my-4">501</div>
+                        <div class="space-y-2 text-left">
+                            <label class="text-xs font-bold text-gray-500">이번 턴 득점 (1발/2발/3발 합계)</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="teamB-turn-score" placeholder="점수 입력" class="p-2 border rounded w-full">
+                                <button onclick="submit501Score('B')" class="bg-indigo-600 text-white px-4 rounded font-bold hover:bg-indigo-700">차감</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 토너먼트 대진표 -->
+        <section id="sec-bracket" class="hidden">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h2 class="text-xl font-bold text-gray-800 mb-6">501점 경기 대진표</h2>
+                <div class="grid md:grid-cols-3 gap-4 text-center">
+                    <div class="border p-4 rounded-lg bg-gray-50">
+                        <h4 class="font-bold text-indigo-800 mb-2">1조 예선</h4>
+                        <div class="bg-white p-2 border rounded my-2 text-sm">1경기: A팀 vs B팀</div>
+                        <div class="bg-white p-2 border rounded my-2 text-sm">3경기: C팀 vs D팀</div>
+                        <div class="bg-white p-2 border rounded my-2 text-sm font-semibold text-blue-600">5경기: 준결승 1</div>
+                    </div>
+                    <div class="border p-4 rounded-lg bg-gray-50">
+                        <h4 class="font-bold text-indigo-800 mb-2">2조 예선</h4>
+                        <div class="bg-white p-2 border rounded my-2 text-sm">2경기: A팀 vs B팀</div>
+                        <div class="bg-white p-2 border rounded my-2 text-sm">4경기: C팀 vs D팀</div>
+                        <div class="bg-white p-2 border rounded my-2 text-sm font-semibold text-blue-600">6경기: 준결승 2</div>
+                    </div>
+                    <div class="border p-4 rounded-lg bg-yellow-50 border-yellow-300">
+                        <h4 class="font-bold text-yellow-800 mb-2">본선 / 결승</h4>
+                        <div class="bg-white p-2 border rounded my-2 text-sm">7경기: 준결승전</div>
+                        <div class="bg-white p-2 border rounded my-2 text-sm font-bold text-red-600">결승전 (8경기)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 스크립트 영역 -->
+    <script>
+        // 초기 데이터 세팅
+        let relayData = {
+            1: { normal: 0, bull: 0, time: 80, total: 0 },
+            2: { normal: 0, bull: 0, time: 80, total: 0 },
+            3: { normal: 0, bull: 0, time: 80, total: 0 },
+            4: { normal: 0, bull: 0, time: 80, total: 0 },
+            5: { normal: 0, bull: 0, time: 80, total: 0 }
+        };
+
+        let match501Scores = {
+            m1: { teamA: 501, teamB: 501, nameA: "1조 A팀", nameB: "1조 B팀" },
+            m2: { teamA: 501, teamB: 501, nameA: "2조 A팀", nameB: "2조 B팀" },
+            m3: { teamA: 501, teamB: 501, nameA: "1조 C팀", nameB: "1조 D팀" },
+            m4: { teamA: 501, teamB: 501, nameA: "2조 C팀", nameB: "2조 D팀" }
+        };
+
+        function switchTab(tabName) {
+            document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-tab'));
+            
+            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.add('active-tab');
+        }
+
+        function saveRelayData(e) {
+            e.preventDefault();
+            const cls = document.getElementById('relay-class').value;
+            const normal = parseInt(document.getElementById('relay-normal').value) || 0;
+            const bull = parseInt(document.getElementById('relay-bull').value) || 0;
+            const time = parseInt(document.getElementById('relay-time').value) || 0;
+
+            const timeBonus = Math.max(0, 80 - time);
+            const total = normal + (bull * 3) + timeBonus;
+
+            relayData[cls] = { normal, bull, time, total };
+            renderRelayTable();
+            renderOverallRank();
+            alert(`${cls}반 릴레이 기록이 저장되었습니다.`);
+        }
+
+        function renderRelayTable() {
+            const tbody = document.getElementById('relay-score-table');
+            tbody.innerHTML = '';
+            for(let i=1; i<=5; i++) {
+                const d = relayData[i];
+                const timeBonus = Math.max(0, 80 - d.time);
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-2 font-bold">${i}반</td>
+                        <td class="p-2">${d.normal}</td>
+                        <td class="p-2">${d.bull} (${d.bull*3})</td>
+                        <td class="p-2">+${timeBonus}</td>
+                        <td class="p-2 font-bold text-indigo-600">${d.total}</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function load501Match() {
+            const matchKey = document.getElementById('select-501-match').value;
+            const match = match501Scores[matchKey];
+            document.getElementById('teamA-name').innerText = match.nameA;
+            document.getElementById('teamB-name').innerText = match.nameB;
+            document.getElementById('teamA-score').innerText = match.teamA;
+            document.getElementById('teamB-score').innerText = match.teamB;
+        }
+
+        function submit501Score(team) {
+            const matchKey = document.getElementById('select-501-match').value;
+            const inputEl = document.getElementById(`team${team}-turn-score`);
+            const subScore = parseInt(inputEl.value) || 0;
+
+            let currentScore = match501Scores[matchKey][`team${team}`];
+            if (currentScore - subScore < 0) {
+                alert("버스트(Bust)! 남은 점수보다 높은 점수는 차감되지 않습니다.");
+            } else {
+                match501Scores[matchKey][`team${team}`] -= subScore;
+                if(match501Scores[matchKey][`team${team}`] === 0) {
+                    alert(`축하합니다! ${match501Scores[matchKey][`name${team}`]}이 승리했습니다!`);
+                }
+            }
+            inputEl.value = '';
+            load501Match();
+        }
+
+        function renderOverallRank() {
+            const tbody = document.getElementById('overall-rank-table');
+            tbody.innerHTML = '';
+            for(let i=1; i<=5; i++) {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3">-</td>
+                        <td class="p-3 font-bold text-indigo-900">${i}반</td>
+                        <td class="p-3">${relayData[i].total}점</td>
+                        <td class="p-3">진행 중</td>
+                        <td class="p-3 text-indigo-600 font-extrabold">-</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // 초기화
+        renderRelayTable();
+        renderOverallRank();
+        load501Match();
+    </script>
+</body>
+</html>
