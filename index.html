@@ -20,7 +20,14 @@
                 <i class="fa-solid font-bullseye text-red-500 text-3xl"></i>
                 2026학년도 2학년 다트 대항전
             </h1>
-            <span class="bg-indigo-700 px-3 py-1 rounded-full text-sm font-medium">9월 28일 ~ 10월 6일</span>
+            <div class="flex items-center gap-3">
+                <span id="auth-status-badge" class="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                    <i class="fa-solid fa-lock mr-1"></i>일반 모드 (조회전용)
+                </span>
+                <button id="auth-btn" onclick="toggleAuth()" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1 rounded-md text-sm font-semibold transition">
+                    <i class="fa-solid fa-key mr-1"></i>관리자 인증
+                </button>
+            </div>
         </div>
     </header>
 
@@ -48,9 +55,12 @@
         <!-- 1. 종합 순위 대시보드 -->
         <section id="sec-dashboard" class="space-y-6">
             <div class="bg-white p-6 rounded-xl shadow">
-                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-ranking-star text-yellow-500"></i> 학급별 종합 순위표
-                </h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-ranking-star text-yellow-500"></i> 학급별 종합 순위표
+                    </h2>
+                    <p class="text-xs text-gray-500">* 관리자 인증 시 제2경기 점수를 직접 입력할 수 있습니다.</p>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-center border-collapse">
                         <thead>
@@ -58,12 +68,12 @@
                                 <th class="p-3">순위</th>
                                 <th class="p-3">학급</th>
                                 <th class="p-3">제1경기(릴레이) 점수</th>
-                                <th class="p-3">제2경기(501) 점수</th>
+                                <th class="p-3 w-64">제2경기(501) 점수 직접입력</th>
                                 <th class="p-3">종합 총점</th>
                             </tr>
                         </thead>
                         <tbody id="overall-rank-table" class="divide-y text-gray-700 font-semibold">
-                            <!-- JS 연산으로 채워짐 -->
+                            <!-- JS 연산 -->
                         </tbody>
                     </table>
                 </div>
@@ -101,7 +111,9 @@
                             <input type="number" id="relay-time" value="80" min="0" max="80" class="w-full mt-1 p-2 border rounded-md" required>
                             <p class="text-xs text-blue-600 mt-1">* 제한시간 80초 대비 단축 초당 +1개 추가</p>
                         </div>
-                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md font-bold hover:bg-indigo-700">기록 저장</button>
+                        <button type="submit" id="relay-submit-btn" class="w-full bg-indigo-600 text-white py-2 rounded-md font-bold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+                            기록 저장 (관리자 전용)
+                        </button>
                     </form>
                 </div>
 
@@ -129,42 +141,128 @@
         <!-- 3. 제2경기 : 501점 스코어키퍼 -->
         <section id="sec-game501" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-xl shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-gray-800">501 경기 스코어보드</h2>
-                    <div class="flex gap-2">
-                        <select id="select-501-match" class="p-2 border rounded-md text-sm font-semibold" onchange="load501Match()">
-                            <option value="m1">예선 1경기 (1조 A팀 vs B팀)</option>
-                            <option value="m2">예선 2경기 (2조 A팀 vs B팀)</option>
-                            <option value="m3">예선 3경기 (1조 C팀 vs D팀)</option>
-                            <option value="m4">예선 4경기 (2조 C팀 vs D팀)</option>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">501 경기 스코어보드</h2>
+                        <p class="text-xs text-gray-500">원하는 경기를 선택하여 점수를 기록하고 팀명을 지정할 수 있습니다.</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <label class="text-sm font-bold text-gray-700 whitespace-nowrap">경기 선택:</label>
+                        <select id="select-501-match" class="p-2 border rounded-md text-sm font-bold bg-indigo-50 text-indigo-900 w-full md:w-auto" onchange="load501Match()">
+                            <optgroup label="예선 경기">
+                                <option value="m1">예선 1경기 (1조 A팀 vs B팀)</option>
+                                <option value="m2">예선 2경기 (2조 A팀 vs B팀)</option>
+                                <option value="m3">예선 3경기 (1조 C팀 vs D팀)</option>
+                                <option value="m4">예선 4경기 (2조 C팀 vs D팀)</option>
+                            </optgroup>
+                            <optgroup label="본선 경기">
+                                <option value="m5">본선 5경기 (1조 5경기)</option>
+                                <option value="m6">본선 6경기 (2조 6경기)</option>
+                            </optgroup>
+                            <optgroup label="준결승 및 결승">
+                                <option value="m7">준결승 7경기</option>
+                                <option value="m8">준결승 8경기</option>
+                                <option value="m9">★ 결승전 ★</option>
+                            </optgroup>
                         </select>
+                        <button onclick="editTeamNames()" id="edit-team-btn" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+                            <i class="fa-solid fa-pen-to-square mr-1"></i>팀명 수정
+                        </button>
                     </div>
                 </div>
 
                 <div class="grid md:grid-cols-2 gap-8">
-                    <!-- 팀 A 카운터 -->
-                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
-                        <h3 id="teamA-name" class="text-xl font-bold text-indigo-900 mb-2">팀 A</h3>
-                        <div id="teamA-score" class="text-6xl font-black text-red-600 my-4">501</div>
-                        <div class="space-y-2 text-left">
-                            <label class="text-xs font-bold text-gray-500">이번 턴 득점 (1발/2발/3발 합계)</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="teamA-turn-score" placeholder="점수 입력" class="p-2 border rounded w-full">
-                                <button onclick="submit501Score('A')" class="bg-indigo-600 text-white px-4 rounded font-bold hover:bg-indigo-700">차감</button>
+                    <!-- 팀 A 카운터 및 라운드 입력 -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <div class="text-center">
+                            <h3 id="teamA-name" class="text-xl font-bold text-indigo-900 mb-2">팀 A</h3>
+                            <div class="flex justify-center items-center gap-2">
+                                <div id="teamA-score" class="text-6xl font-black text-red-600 my-2">501</div>
+                                <button onclick="editDirectScore('A')" id="btn-edit-score-A" class="bg-slate-200 hover:bg-slate-300 text-gray-700 px-2 py-1 rounded text-xs font-bold disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" disabled>
+                                    <i class="fa-solid fa-pen mr-1"></i>점수 수정
+                                </button>
                             </div>
+                            <span id="teamA-round-label" class="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded font-bold mb-4">현재 1라운드</span>
+                        </div>
+
+                        <!-- 턴 입력 폼 -->
+                        <div class="bg-white p-4 rounded-lg border space-y-3 mb-4">
+                            <h4 class="text-xs font-bold text-gray-600 border-b pb-1">이번 턴 3발 점수 입력</h4>
+                            <div class="grid grid-cols-3 gap-2">
+                                <input type="number" id="teamA-d1" placeholder="1발" min="0" max="60" class="p-2 border rounded text-center text-sm">
+                                <input type="number" id="teamA-d2" placeholder="2발" min="0" max="60" class="p-2 border rounded text-center text-sm">
+                                <input type="number" id="teamA-d3" placeholder="3발" min="0" max="60" class="p-2 border rounded text-center text-sm">
+                            </div>
+                            <button onclick="submit501Turn('A')" id="btn-submit-A" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700 text-sm disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+                                점수 차감 (관리자 전용)
+                            </button>
+                        </div>
+
+                        <!-- 라운드 내역 히스토리 -->
+                        <div class="overflow-y-auto max-h-48 border rounded bg-white">
+                            <table class="w-full text-center text-xs">
+                                <thead class="bg-gray-100 sticky top-0">
+                                    <tr>
+                                        <th class="p-1">R</th>
+                                        <th class="p-1">1발</th>
+                                        <th class="p-1">2발</th>
+                                        <th class="p-1">3발</th>
+                                        <th class="p-1">합계</th>
+                                        <th class="p-1">남은점수</th>
+                                        <th class="p-1">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teamA-history" class="divide-y">
+                                    <!-- JS 업데이트 -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <!-- 팀 B 카운터 -->
-                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
-                        <h3 id="teamB-name" class="text-xl font-bold text-indigo-900 mb-2">팀 B</h3>
-                        <div id="teamB-score" class="text-6xl font-black text-red-600 my-4">501</div>
-                        <div class="space-y-2 text-left">
-                            <label class="text-xs font-bold text-gray-500">이번 턴 득점 (1발/2발/3발 합계)</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="teamB-turn-score" placeholder="점수 입력" class="p-2 border rounded w-full">
-                                <button onclick="submit501Score('B')" class="bg-indigo-600 text-white px-4 rounded font-bold hover:bg-indigo-700">차감</button>
+                    <!-- 팀 B 카운터 및 라운드 입력 -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <div class="text-center">
+                            <h3 id="teamB-name" class="text-xl font-bold text-indigo-900 mb-2">팀 B</h3>
+                            <div class="flex justify-center items-center gap-2">
+                                <div id="teamB-score" class="text-6xl font-black text-red-600 my-2">501</div>
+                                <button onclick="editDirectScore('B')" id="btn-edit-score-B" class="bg-slate-200 hover:bg-slate-300 text-gray-700 px-2 py-1 rounded text-xs font-bold disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" disabled>
+                                    <i class="fa-solid fa-pen mr-1"></i>점수 수정
+                                </button>
                             </div>
+                            <span id="teamB-round-label" class="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded font-bold mb-4">현재 1라운드</span>
+                        </div>
+
+                        <!-- 턴 입력 폼 -->
+                        <div class="bg-white p-4 rounded-lg border space-y-3 mb-4">
+                            <h4 class="text-xs font-bold text-gray-600 border-b pb-1">이번 턴 3발 점수 입력</h4>
+                            <div class="grid grid-cols-3 gap-2">
+                                <input type="number" id="teamB-d1" placeholder="1발" min="0" max="60" class="p-2 border rounded text-center text-sm">
+                                <input type="number" id="teamB-d2" placeholder="2발" min="0" max="60" class="p-2 border rounded text-center text-sm">
+                                <input type="number" id="teamB-d3" placeholder="3발" min="0" max="60" class="p-2 border rounded text-center text-sm">
+                            </div>
+                            <button onclick="submit501Turn('B')" id="btn-submit-B" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700 text-sm disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+                                점수 차감 (관리자 전용)
+                            </button>
+                        </div>
+
+                        <!-- 라운드 내역 히스토리 -->
+                        <div class="overflow-y-auto max-h-48 border rounded bg-white">
+                            <table class="w-full text-center text-xs">
+                                <thead class="bg-gray-100 sticky top-0">
+                                    <tr>
+                                        <th class="p-1">R</th>
+                                        <th class="p-1">1발</th>
+                                        <th class="p-1">2발</th>
+                                        <th class="p-1">3발</th>
+                                        <th class="p-1">합계</th>
+                                        <th class="p-1">남은점수</th>
+                                        <th class="p-1">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teamB-history" class="divide-y">
+                                    <!-- JS 업데이트 -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -172,26 +270,54 @@
         </section>
 
         <!-- 4. 토너먼트 대진표 -->
-        <section id="sec-bracket" class="hidden">
+        <section id="sec-bracket" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-xl shadow">
-                <h2 class="text-xl font-bold text-gray-800 mb-6">501점 경기 대진표</h2>
-                <div class="grid md:grid-cols-3 gap-4 text-center">
+                <h2 class="text-xl font-bold text-gray-800 mb-6">501점 경기 대진표 진행 현황</h2>
+                <div class="grid md:grid-cols-4 gap-4 text-center mb-8">
                     <div class="border p-4 rounded-lg bg-gray-50">
-                        <h4 class="font-bold text-indigo-800 mb-2">1조 예선</h4>
-                        <div class="bg-white p-2 border rounded my-2 text-sm">1경기: A팀 vs B팀</div>
-                        <div class="bg-white p-2 border rounded my-2 text-sm">3경기: C팀 vs D팀</div>
-                        <div class="bg-white p-2 border rounded my-2 text-sm font-semibold text-blue-600">5경기: 준결승 1</div>
+                        <h4 class="font-bold text-indigo-800 mb-2">예선 라운드</h4>
+                        <div class="bg-white p-2 border rounded my-2 text-xs">예선 1경기 (1조 A vs B)</div>
+                        <div class="bg-white p-2 border rounded my-2 text-xs">예선 2경기 (2조 A vs B)</div>
+                        <div class="bg-white p-2 border rounded my-2 text-xs">예선 3경기 (1조 C vs D)</div>
+                        <div class="bg-white p-2 border rounded my-2 text-xs">예선 4경기 (2조 C vs D)</div>
                     </div>
-                    <div class="border p-4 rounded-lg bg-gray-50">
-                        <h4 class="font-bold text-indigo-800 mb-2">2조 예선</h4>
-                        <div class="bg-white p-2 border rounded my-2 text-sm">2경기: A팀 vs B팀</div>
-                        <div class="bg-white p-2 border rounded my-2 text-sm">4경기: C팀 vs D팀</div>
-                        <div class="bg-white p-2 border rounded my-2 text-sm font-semibold text-blue-600">6경기: 준결승 2</div>
+                    <div class="border p-4 rounded-lg bg-blue-50 border-blue-200">
+                        <h4 class="font-bold text-blue-900 mb-2">본선 라운드</h4>
+                        <div class="bg-white p-2 border rounded my-2 text-xs font-semibold">본선 5경기 (1조)</div>
+                        <div class="bg-white p-2 border rounded my-2 text-xs font-semibold">본선 6경기 (2조)</div>
+                    </div>
+                    <div class="border p-4 rounded-lg bg-indigo-50 border-indigo-200">
+                        <h4 class="font-bold text-indigo-900 mb-2">준결승전</h4>
+                        <div class="bg-white p-2 border rounded my-2 text-xs font-semibold">준결승 7경기</div>
+                        <div class="bg-white p-2 border rounded my-2 text-xs font-semibold">준결승 8경기</div>
                     </div>
                     <div class="border p-4 rounded-lg bg-yellow-50 border-yellow-300">
-                        <h4 class="font-bold text-yellow-800 mb-2">본선 / 결승</h4>
-                        <div class="bg-white p-2 border rounded my-2 text-sm">7경기: 준결승전</div>
-                        <div class="bg-white p-2 border rounded my-2 text-sm font-bold text-red-600">결승전 (8경기)</div>
+                        <h4 class="font-bold text-yellow-800 mb-2">최종 결승전</h4>
+                        <div class="bg-white p-3 border-2 border-yellow-400 rounded my-2 text-sm font-bold text-red-600 shadow">
+                            🏆 결승전 🏆
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 경기별 승리/패배 반 기록 섹션 -->
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 경기 결과 기록 (승리 / 패배 학급)
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-center border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 border-b text-gray-700 text-sm">
+                                    <th class="p-3">경기 구분</th>
+                                    <th class="p-3">승리 학급</th>
+                                    <th class="p-3">패배 학급</th>
+                                    <th class="p-3 w-28">저장</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bracket-results-tbody" class="divide-y text-sm">
+                                <!-- JS에서 동적 생성 -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -201,7 +327,10 @@
 
     <!-- 스크립트 영역 -->
     <script>
-        // 초기 데이터 세팅
+        let isAdmin = false;
+        const ADMIN_CODE = "오주중123";
+
+        // 데이터 세팅
         let relayData = {
             1: { normal: 0, bull: 0, time: 80, total: 0 },
             2: { normal: 0, bull: 0, time: 80, total: 0 },
@@ -210,12 +339,172 @@
             5: { normal: 0, bull: 0, time: 80, total: 0 }
         };
 
-        let match501Scores = {
-            m1: { teamA: 501, teamB: 501, nameA: "1조 A팀", nameB: "1조 B팀" },
-            m2: { teamA: 501, teamB: 501, nameA: "2조 A팀", nameB: "2조 B팀" },
-            m3: { teamA: 501, teamB: 501, nameA: "1조 C팀", nameB: "1조 D팀" },
-            m4: { teamA: 501, teamB: 501, nameA: "2조 C팀", nameB: "2조 D팀" }
+        // 제2경기 직접 입력 점수 저장 객체
+        let game2Scores = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+        // 대진표 승/패 기록 데이터
+        let bracketMatchResults = {
+            "m1": { label: "예선 1경기", winner: "", loser: "" },
+            "m2": { label: "예선 2경기", winner: "", loser: "" },
+            "m3": { label: "예선 3경기", winner: "", loser: "" },
+            "m4": { label: "예선 4경기", winner: "", loser: "" },
+            "m5": { label: "본선 5경기", winner: "", loser: "" },
+            "m6": { label: "본선 6경기", winner: "", loser: "" },
+            "m7": { label: "준결승 7경기", winner: "", loser: "" },
+            "m8": { label: "준결승 8경기", winner: "", loser: "" },
+            "m9": { label: "최종 결승전", winner: "", loser: "" }
         };
+
+        let match501Scores = {
+            m1: { nameA: "1조 예선1 A팀", nameB: "1조 예선1 B팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
+            m2: { nameA: "2조 예선2 A팀", nameB: "2조 예선2 B팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
+            m3: { nameA: "1조 예선3 C팀", nameB: "1조 예선3 D팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
+            m4: { nameA: "2조 예선4 C팀", nameB: "2조 예선4 D팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
+            m5: { nameA: "본선 5경기 팀1", nameB: "본선 5경기 팀2", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
+            m6: { nameA: "본선 6경기 팀1", nameB: "본선 6경기 팀2", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
+            m7: { nameA: "준결승 7경기 팀1", nameB: "준결승 7경기 팀2", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
+            m8: { nameA: "준결승 8경기 팀1", nameB: "준결승 8경기 팀2", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
+            m9: { nameA: "결승전 A팀", nameB: "결승전 B팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] }
+        };
+
+        function toggleAuth() {
+            if (isAdmin) {
+                isAdmin = false;
+                updateAuthUI();
+                alert("관리자 로그아웃 되었습니다.");
+            } else {
+                const input = prompt("관리자 코드를 입력하세요:");
+                if (input === ADMIN_CODE) {
+                    isAdmin = true;
+                    updateAuthUI();
+                    alert("관리자 인증되었습니다. 내용 수정을 진행하실 수 있습니다.");
+                } else if (input !== null) {
+                    alert("관리자 코드가 일치하지 않습니다.");
+                }
+            }
+        }
+
+        function updateAuthUI() {
+            const badge = document.getElementById('auth-status-badge');
+            const btn = document.getElementById('auth-btn');
+            
+            const relayBtn = document.getElementById('relay-submit-btn');
+            const editTeamBtn = document.getElementById('edit-team-btn');
+            const btnA = document.getElementById('btn-submit-A');
+            const btnB = document.getElementById('btn-submit-B');
+            const editScoreA = document.getElementById('btn-edit-score-A');
+            const editScoreB = document.getElementById('btn-edit-score-B');
+
+            if (isAdmin) {
+                badge.className = "bg-green-600 text-white px-3 py-1 rounded-full text-xs font-bold";
+                badge.innerHTML = '<i class="fa-solid fa-lock-open mr-1"></i>관리자 모드 (수정가능)';
+                btn.innerText = "로그아웃";
+                
+                relayBtn.disabled = false;
+                relayBtn.innerText = "기록 저장";
+                editTeamBtn.disabled = false;
+                btnA.disabled = false;
+                btnA.innerText = "점수 차감 적용";
+                btnB.disabled = false;
+                btnB.innerText = "점수 차감 적용";
+                editScoreA.disabled = false;
+                editScoreB.disabled = false;
+            } else {
+                badge.className = "bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold";
+                badge.innerHTML = '<i class="fa-solid fa-lock mr-1"></i>일반 모드 (조회전용)';
+                btn.innerText = "관리자 인증";
+                
+                relayBtn.disabled = true;
+                relayBtn.innerText = "기록 저장 (관리자 전용)";
+                editTeamBtn.disabled = true;
+                btnA.disabled = true;
+                btnA.innerText = "점수 차감 (관리자 전용)";
+                btnB.disabled = true;
+                btnB.innerText = "점수 차감 (관리자 전용)";
+                editScoreA.disabled = true;
+                editScoreB.disabled = true;
+            }
+            renderOverallRank();
+            renderBracketResultsTable();
+            load501Match();
+        }
+
+        function saveGame2Score(cls) {
+            if (!isAdmin) return;
+            const scoreVal = parseInt(document.getElementById(`game2-input-${cls}`).value) || 0;
+            game2Scores[cls] = scoreVal;
+            renderOverallRank();
+            alert(`${cls}반의 제2경기 점수(${scoreVal}점)가 적용되었습니다.`);
+        }
+
+        function renderOverallRank() {
+            const tbody = document.getElementById('overall-rank-table');
+            tbody.innerHTML = '';
+
+            let classList = [];
+            for (let i = 1; i <= 5; i++) {
+                const rScore = relayData[i].total;
+                const g2Score = game2Scores[i];
+                const grandTotal = rScore + g2Score;
+                classList.push({ cls: i, rScore, g2Score, grandTotal });
+            }
+
+            classList.sort((a, b) => b.grandTotal - a.grandTotal);
+
+            classList.forEach((item, index) => {
+                const rankDisplay = item.grandTotal > 0 ? `${index + 1}위` : '-';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-extrabold text-indigo-600">${rankDisplay}</td>
+                        <td class="p-3 font-bold text-indigo-900">${item.cls}반</td>
+                        <td class="p-3">${item.rScore}점</td>
+                        <td class="p-3">
+                            <div class="flex justify-center items-center gap-2">
+                                <input type="number" id="game2-input-${item.cls}" value="${item.g2Score}" min="0" class="w-20 p-1 border rounded text-center text-sm" ${isAdmin ? '' : 'disabled'}>
+                                <button onclick="saveGame2Score(${item.cls})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs font-bold disabled:bg-gray-300 disabled:cursor-not-allowed" ${isAdmin ? '' : 'disabled'}>저장</button>
+                            </div>
+                        </td>
+                        <td class="p-3 text-red-600 font-black text-lg">${item.grandTotal}점</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function editTeamNames() {
+            if (!isAdmin) return;
+            const matchKey = document.getElementById('select-501-match').value;
+            const match = match501Scores[matchKey];
+
+            const newNameA = prompt("팀 A의 새 이름을 입력하세요:", match.nameA);
+            if (newNameA !== null && newNameA.trim() !== "") {
+                match.nameA = newNameA.trim();
+            }
+
+            const newNameB = prompt("팀 B의 새 이름을 입력하세요:", match.nameB);
+            if (newNameB !== null && newNameB.trim() !== "") {
+                match.nameB = newNameB.trim();
+            }
+
+            load501Match();
+        }
+
+        function editDirectScore(team) {
+            if (!isAdmin) return;
+            const matchKey = document.getElementById('select-501-match').value;
+            const match = match501Scores[matchKey];
+            const current = match[`score${team}`];
+
+            const input = prompt(`팀 ${team}의 남은 점수를 직접 입력하세요 (현재: ${current}점):`, current);
+            if (input !== null) {
+                const val = parseInt(input);
+                if (!isNaN(val) && val >= 0) {
+                    match[`score${team}`] = val;
+                    load501Match();
+                } else {
+                    alert("올바른 숫자를 입력해주세요.");
+                }
+            }
+        }
 
         function switchTab(tabName) {
             document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
@@ -227,6 +516,8 @@
 
         function saveRelayData(e) {
             e.preventDefault();
+            if (!isAdmin) return;
+            
             const cls = document.getElementById('relay-class').value;
             const normal = parseInt(document.getElementById('relay-normal').value) || 0;
             const bull = parseInt(document.getElementById('relay-bull').value) || 0;
@@ -238,7 +529,7 @@
             relayData[cls] = { normal, bull, time, total };
             renderRelayTable();
             renderOverallRank();
-            alert(`${cls}반 릴레이 기록이 저장되었습니다.`);
+            alert(`${cls}반 릴레이 기록이 성공적으로 저장되었습니다.`);
         }
 
         function renderRelayTable() {
@@ -259,53 +550,162 @@
             }
         }
 
+        // 전체 점수 및 버스트 재계산 함수
+        function recalculate501(matchKey, team) {
+            const match = match501Scores[matchKey];
+            const history = match[`history${team}`];
+            let currentRemain = 501;
+
+            history.forEach(row => {
+                const rawSum = row.d1 + row.d2 + row.d3;
+                if (currentRemain - rawSum < 0) {
+                    row.bust = true;
+                    row.sum = 0;
+                    row.remain = currentRemain;
+                } else {
+                    row.bust = false;
+                    row.sum = rawSum;
+                    currentRemain -= rawSum;
+                    row.remain = currentRemain;
+                }
+            });
+
+            match[`score${team}`] = currentRemain;
+        }
+
         function load501Match() {
             const matchKey = document.getElementById('select-501-match').value;
             const match = match501Scores[matchKey];
+            
             document.getElementById('teamA-name').innerText = match.nameA;
             document.getElementById('teamB-name').innerText = match.nameB;
-            document.getElementById('teamA-score').innerText = match.teamA;
-            document.getElementById('teamB-score').innerText = match.teamB;
+            document.getElementById('teamA-score').innerText = match.scoreA;
+            document.getElementById('teamB-score').innerText = match.scoreB;
+
+            document.getElementById('teamA-round-label').innerText = `현재 ${match.historyA.length + 1}라운드`;
+            document.getElementById('teamB-round-label').innerText = `현재 ${match.historyB.length + 1}라운드`;
+
+            renderHistoryTable('A', match.historyA);
+            renderHistoryTable('B', match.historyB);
         }
 
-        function submit501Score(team) {
+        function submit501Turn(team) {
+            if (!isAdmin) return;
             const matchKey = document.getElementById('select-501-match').value;
-            const inputEl = document.getElementById(`team${team}-turn-score`);
-            const subScore = parseInt(inputEl.value) || 0;
+            const match = match501Scores[matchKey];
 
-            let currentScore = match501Scores[matchKey][`team${team}`];
-            if (currentScore - subScore < 0) {
-                alert("버스트(Bust)! 남은 점수보다 높은 점수는 차감되지 않습니다.");
-            } else {
-                match501Scores[matchKey][`team${team}`] -= subScore;
-                if(match501Scores[matchKey][`team${team}`] === 0) {
-                    alert(`축하합니다! ${match501Scores[matchKey][`name${team}`]}이 승리했습니다!`);
+            const d1 = parseInt(document.getElementById(`team${team}-d1`).value) || 0;
+            const d2 = parseInt(document.getElementById(`team${team}-d2`).value) || 0;
+            const d3 = parseInt(document.getElementById(`team${team}-d3`).value) || 0;
+
+            match[`history${team}`].push({ d1, d2, d3, sum: 0, remain: 0, bust: false });
+            recalculate501(matchKey, team);
+
+            document.getElementById(`team${team}-d1`).value = '';
+            document.getElementById(`team${team}-d2`).value = '';
+            document.getElementById(`team${team}-d3`).value = '';
+
+            load501Match();
+
+            if (match[`score${team}`] === 0) {
+                alert(`🎉 축하합니다! ${match[`name${team}`]}이 승리했습니다!`);
+            }
+        }
+
+        function editRoundScore(team, index) {
+            if (!isAdmin) return;
+            const matchKey = document.getElementById('select-501-match').value;
+            const match = match501Scores[matchKey];
+            const item = match[`history${team}`][index];
+
+            const input = prompt(`${index + 1}라운드의 1발, 2발, 3발 점수를 쉼표(,)로 구분하여 입력하세요:`, `${item.d1},${item.d2},${item.d3}`);
+            if (input !== null) {
+                const parts = input.split(',').map(n => parseInt(n.trim()) || 0);
+                if (parts.length === 3) {
+                    item.d1 = parts[0];
+                    item.d2 = parts[1];
+                    item.d3 = parts[2];
+
+                    recalculate501(matchKey, team);
+                    load501Match();
+                    alert(`${index + 1}라운드 점수가 수정되었습니다.`);
+                } else {
+                    alert("3개의 숫자를 쉼표로 구분하여 정확히 입력해주세요. (예: 20,15,10)");
                 }
             }
-            inputEl.value = '';
-            load501Match();
         }
 
-        function renderOverallRank() {
-            const tbody = document.getElementById('overall-rank-table');
+        function deleteRoundScore(team, index) {
+            if (!isAdmin) return;
+            if (confirm(`${index + 1}라운드 내역을 삭제하시겠습니까?`)) {
+                const matchKey = document.getElementById('select-501-match').value;
+                match501Scores[matchKey][`history${team}`].splice(index, 1);
+                
+                recalculate501(matchKey, team);
+                load501Match();
+            }
+        }
+
+        function renderHistoryTable(team, history) {
+            const tbody = document.getElementById(`team${team}-history`);
             tbody.innerHTML = '';
-            for(let i=1; i<=5; i++) {
+            history.forEach((row, idx) => {
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-3">-</td>
-                        <td class="p-3 font-bold text-indigo-900">${i}반</td>
-                        <td class="p-3">${relayData[i].total}점</td>
-                        <td class="p-3">진행 중</td>
-                        <td class="p-3 text-indigo-600 font-extrabold">-</td>
+                    <tr class="${row.bust ? 'bg-red-50 text-red-600' : ''}">
+                        <td class="p-1 font-semibold">${idx + 1}</td>
+                        <td class="p-1">${row.d1}</td>
+                        <td class="p-1">${row.d2}</td>
+                        <td class="p-1">${row.d3}</td>
+                        <td class="p-1 font-bold">${row.bust ? 'Bust' : row.sum}</td>
+                        <td class="p-1 font-extrabold text-indigo-700">${row.remain}</td>
+                        <td class="p-1 whitespace-nowrap">
+                            <button onclick="editRoundScore('${team}', ${idx})" class="bg-amber-500 text-white px-1 py-0.5 rounded text-[10px] hover:bg-amber-600 mr-1 disabled:opacity-40 disabled:cursor-not-allowed" ${isAdmin ? '' : 'disabled'}>수정</button>
+                            <button onclick="deleteRoundScore('${team}', ${idx})" class="bg-red-500 text-white px-1 py-0.5 rounded text-[10px] hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed" ${isAdmin ? '' : 'disabled'}>삭제</button>
+                        </td>
                     </tr>
                 `;
-            }
+            });
+        }
+
+        function renderBracketResultsTable() {
+            const tbody = document.getElementById('bracket-results-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            Object.keys(bracketMatchResults).forEach(key => {
+                const res = bracketMatchResults[key];
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-2 font-bold text-indigo-900">${res.label}</td>
+                        <td class="p-2">
+                            <input type="text" id="winner-${key}" value="${res.winner}" placeholder="예: 1반" class="p-1 border rounded text-center text-sm w-32" ${isAdmin ? '' : 'disabled'}>
+                        </td>
+                        <td class="p-2">
+                            <input type="text" id="loser-${key}" value="${res.loser}" placeholder="예: 2반" class="p-1 border rounded text-center text-sm w-32" ${isAdmin ? '' : 'disabled'}>
+                        </td>
+                        <td class="p-2">
+                            <button onclick="saveBracketMatchResult('${key}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold disabled:bg-gray-300 disabled:cursor-not-allowed" ${isAdmin ? '' : 'disabled'}>저장</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function saveBracketMatchResult(key) {
+            if (!isAdmin) return;
+            const w = document.getElementById(`winner-${key}`).value.trim();
+            const l = document.getElementById(`loser-${key}`).value.trim();
+
+            bracketMatchResults[key].winner = w;
+            bracketMatchResults[key].loser = l;
+
+            alert(`${bracketMatchResults[key].label} 결과가 저장되었습니다.`);
         }
 
         // 초기화
         renderRelayTable();
-        renderOverallRank();
         load501Match();
+        updateAuthUI();
     </script>
 </body>
 </html>
