@@ -16,7 +16,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 입력받으신 Firebase 키 설정
         const firebaseConfig = {
           apiKey: "AIzaSyBSdgqWrS9QNS6fpeg3JxFG4WDHVbtg6eE",
           authDomain: "dart-scores-e4a3f.firebaseapp.com",
@@ -26,16 +25,13 @@
           appId: "1:803233616646:web:facd49d2842d990a390487"
         };
 
-        // Firebase 초기화
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 전역 객체 저장
         window.db = db;
         window.doc = doc;
         window.setDoc = setDoc;
 
-        // 실시간 데이터 수신 (모든 접속자 화면에 실시간 자동 동기화)
         onSnapshot(doc(db, "dart_tournament", "main_data"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -44,7 +40,6 @@
                 if (data.bracketMatchResults) window.bracketMatchResults = data.bracketMatchResults;
                 if (data.match501Scores) window.match501Scores = data.match501Scores;
 
-                // UI 동기화
                 if (window.renderRelayTable) window.renderRelayTable();
                 if (window.renderOverallRank) window.renderOverallRank();
                 if (window.renderBracketResultsTable) window.renderBracketResultsTable();
@@ -52,7 +47,6 @@
             }
         });
 
-        // Firestore에 데이터 저장하는 함수
         window.saveToFirestore = async function() {
             try {
                 await setDoc(doc(db, "dart_tournament", "main_data"), {
@@ -196,7 +190,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b">
                     <div>
                         <h2 class="text-xl font-bold text-gray-800">501 경기 스코어보드</h2>
-                        <p class="text-xs text-gray-500">원하는 경기를 선택하여 점수를 기록하고 팀명을 지정할 수 있습니다.</p>
+                        <p class="text-xs text-gray-500">매 라운드마다 1번, 2번, 3번 선수가 순서대로 1발씩 투구합니다.</p>
                     </div>
                     <div class="flex items-center gap-2 w-full md:w-auto">
                         <label class="text-sm font-bold text-gray-700 whitespace-nowrap">경기 선택:</label>
@@ -217,8 +211,8 @@
                                 <option value="m9">★ 결승전 ★</option>
                             </optgroup>
                         </select>
-                        <button onclick="editTeamNames()" id="edit-team-btn" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
-                            <i class="fa-solid fa-pen-to-square mr-1"></i>팀명 수정
+                        <button onclick="editTeamAndPlayers()" id="edit-team-btn" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+                            <i class="fa-solid fa-users-gear mr-1"></i>팀/선수명 설정
                         </button>
                     </div>
                 </div>
@@ -227,7 +221,8 @@
                     <!-- 팀 A -->
                     <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
                         <div class="text-center">
-                            <h3 id="teamA-name" class="text-xl font-bold text-indigo-900 mb-2">팀 A</h3>
+                            <h3 id="teamA-name" class="text-xl font-bold text-indigo-900 mb-1">팀 A</h3>
+                            <div id="teamA-players-list" class="text-xs text-gray-500 font-semibold mb-2">선수: 1번, 2번, 3번</div>
                             <div class="flex justify-center items-center gap-2">
                                 <div id="teamA-score" class="text-6xl font-black text-red-600 my-2">501</div>
                                 <button onclick="editDirectScore('A')" id="btn-edit-score-A" class="bg-slate-200 hover:bg-slate-300 text-gray-700 px-2 py-1 rounded text-xs font-bold disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" disabled>
@@ -238,18 +233,25 @@
                         </div>
 
                         <div class="bg-white p-4 rounded-lg border space-y-3 mb-4">
-                            <h4 class="text-xs font-bold text-gray-600 border-b pb-1">이번 턴 점수 입력</h4>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">선수 이름 (선택)</label>
-                                <input type="text" id="teamA-player" placeholder="예: 홍길동" class="w-full p-2 border rounded text-xs">
+                            <div class="border-b pb-1">
+                                <h4 class="text-xs font-bold text-gray-600">라운드 투구 점수 입력</h4>
                             </div>
                             <div class="grid grid-cols-3 gap-2">
-                                <input type="number" id="teamA-d1" placeholder="1발" min="0" max="60" class="p-2 border rounded text-center text-sm">
-                                <input type="number" id="teamA-d2" placeholder="2발" min="0" max="60" class="p-2 border rounded text-center text-sm">
-                                <input type="number" id="teamA-d3" placeholder="3발" min="0" max="60" class="p-2 border rounded text-center text-sm">
+                                <div>
+                                    <label id="teamA-p1-label" class="block text-[10px] font-bold text-indigo-700 mb-1 text-center">1발 (1번)</label>
+                                    <input type="number" id="teamA-d1" placeholder="점수" min="0" max="60" class="p-2 border rounded text-center text-sm w-full">
+                                </div>
+                                <div>
+                                    <label id="teamA-p2-label" class="block text-[10px] font-bold text-indigo-700 mb-1 text-center">2발 (2번)</label>
+                                    <input type="number" id="teamA-d2" placeholder="점수" min="0" max="60" class="p-2 border rounded text-center text-sm w-full">
+                                </div>
+                                <div>
+                                    <label id="teamA-p3-label" class="block text-[10px] font-bold text-indigo-700 mb-1 text-center">3발 (3번)</label>
+                                    <input type="number" id="teamA-d3" placeholder="점수" min="0" max="60" class="p-2 border rounded text-center text-sm w-full">
+                                </div>
                             </div>
                             <button onclick="submit501Turn('A')" id="btn-submit-A" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700 text-sm disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
-                                점수 차감 (관리자 전용)
+                                라운드 점수 차감 (관리자 전용)
                             </button>
                         </div>
 
@@ -258,10 +260,9 @@
                                 <thead class="bg-gray-100 sticky top-0">
                                     <tr>
                                         <th class="p-1">R</th>
-                                        <th class="p-1">선수</th>
-                                        <th class="p-1">1발</th>
-                                        <th class="p-1">2발</th>
-                                        <th class="p-1">3발</th>
+                                        <th class="p-1">1발 (선수1)</th>
+                                        <th class="p-1">2발 (선수2)</th>
+                                        <th class="p-1">3발 (선수3)</th>
                                         <th class="p-1">합계</th>
                                         <th class="p-1">남은점수</th>
                                         <th class="p-1">관리</th>
@@ -276,7 +277,8 @@
                     <!-- 팀 B -->
                     <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
                         <div class="text-center">
-                            <h3 id="teamB-name" class="text-xl font-bold text-indigo-900 mb-2">팀 B</h3>
+                            <h3 id="teamB-name" class="text-xl font-bold text-indigo-900 mb-1">팀 B</h3>
+                            <div id="teamB-players-list" class="text-xs text-gray-500 font-semibold mb-2">선수: 1번, 2번, 3번</div>
                             <div class="flex justify-center items-center gap-2">
                                 <div id="teamB-score" class="text-6xl font-black text-red-600 my-2">501</div>
                                 <button onclick="editDirectScore('B')" id="btn-edit-score-B" class="bg-slate-200 hover:bg-slate-300 text-gray-700 px-2 py-1 rounded text-xs font-bold disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" disabled>
@@ -287,18 +289,25 @@
                         </div>
 
                         <div class="bg-white p-4 rounded-lg border space-y-3 mb-4">
-                            <h4 class="text-xs font-bold text-gray-600 border-b pb-1">이번 턴 점수 입력</h4>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">선수 이름 (선택)</label>
-                                <input type="text" id="teamB-player" placeholder="예: 이순신" class="w-full p-2 border rounded text-xs">
+                            <div class="border-b pb-1">
+                                <h4 class="text-xs font-bold text-gray-600">라운드 투구 점수 입력</h4>
                             </div>
                             <div class="grid grid-cols-3 gap-2">
-                                <input type="number" id="teamB-d1" placeholder="1발" min="0" max="60" class="p-2 border rounded text-center text-sm">
-                                <input type="number" id="teamB-d2" placeholder="2발" min="0" max="60" class="p-2 border rounded text-center text-sm">
-                                <input type="number" id="teamB-d3" placeholder="3발" min="0" max="60" class="p-2 border rounded text-center text-sm">
+                                <div>
+                                    <label id="teamB-p1-label" class="block text-[10px] font-bold text-indigo-700 mb-1 text-center">1발 (1번)</label>
+                                    <input type="number" id="teamB-d1" placeholder="점수" min="0" max="60" class="p-2 border rounded text-center text-sm w-full">
+                                </div>
+                                <div>
+                                    <label id="teamB-p2-label" class="block text-[10px] font-bold text-indigo-700 mb-1 text-center">2발 (2번)</label>
+                                    <input type="number" id="teamB-d2" placeholder="점수" min="0" max="60" class="p-2 border rounded text-center text-sm w-full">
+                                </div>
+                                <div>
+                                    <label id="teamB-p3-label" class="block text-[10px] font-bold text-indigo-700 mb-1 text-center">3발 (3번)</label>
+                                    <input type="number" id="teamB-d3" placeholder="점수" min="0" max="60" class="p-2 border rounded text-center text-sm w-full">
+                                </div>
                             </div>
                             <button onclick="submit501Turn('B')" id="btn-submit-B" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700 text-sm disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
-                                점수 차감 (관리자 전용)
+                                라운드 점수 차감 (관리자 전용)
                             </button>
                         </div>
 
@@ -307,10 +316,9 @@
                                 <thead class="bg-gray-100 sticky top-0">
                                     <tr>
                                         <th class="p-1">R</th>
-                                        <th class="p-1">선수</th>
-                                        <th class="p-1">1발</th>
-                                        <th class="p-1">2발</th>
-                                        <th class="p-1">3발</th>
+                                        <th class="p-1">1발 (선수1)</th>
+                                        <th class="p-1">2발 (선수2)</th>
+                                        <th class="p-1">3발 (선수3)</th>
                                         <th class="p-1">합계</th>
                                         <th class="p-1">남은점수</th>
                                         <th class="p-1">관리</th>
@@ -384,10 +392,8 @@
         let isAdmin = false;
         const ADMIN_CODE = "오주중123";
 
-        // 경기 순서 고정 배열
         const MATCH_KEYS = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9"];
 
-        // 초기 기본 데이터 구조
         window.relayData = {
             1: { normal: 0, bull: 0, time: 80, total: 0 },
             2: { normal: 0, bull: 0, time: 80, total: 0 },
@@ -410,16 +416,27 @@
             "m9": { label: "최종 결승전", winner: "", loser: "" }
         };
 
+        const createInitialMatch = (nameA, nameB) => ({
+            nameA,
+            nameB,
+            playersA: ["1번선수", "2번선수", "3번선수"],
+            playersB: ["1번선수", "2번선수", "3번선수"],
+            scoreA: 501,
+            scoreB: 501,
+            historyA: [],
+            historyB: []
+        });
+
         window.match501Scores = {
-            m1: { nameA: "1조 예선1 A팀", nameB: "1조 예선1 B팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
-            m2: { nameA: "2조 예선2 A팀", nameB: "2조 예선2 B팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
-            m3: { nameA: "1조 예선3 C팀", nameB: "1조 예선3 D팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
-            m4: { nameA: "2조 예선4 C팀", nameB: "2조 예선4 D팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
-            m5: { nameA: "본선 5경기 팀1", nameB: "본선 5경기 팀2", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
-            m6: { nameA: "본선 6경기 팀1", nameB: "본선 6경기 팀2", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
-            m7: { nameA: "준결승 7경기 팀1", nameB: "준결승 7경기 팀2", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
-            m8: { nameA: "준결승 8경기 팀1", nameB: "준결승 8경기 팀2", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
-            m9: { nameA: "결승전 A팀", nameB: "결승전 B팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] }
+            m1: createInitialMatch("1조 예선1 A팀", "1조 예선1 B팀"),
+            m2: createInitialMatch("2조 예선2 A팀", "2조 예선2 B팀"),
+            m3: createInitialMatch("1조 예선3 C팀", "1조 예선3 D팀"),
+            m4: createInitialMatch("2조 예선4 C팀", "2조 예선4 D팀"),
+            m5: createInitialMatch("본선 5경기 팀1", "본선 5경기 팀2"),
+            m6: createInitialMatch("본선 6경기 팀1", "본선 6경기 팀2"),
+            m7: createInitialMatch("준결승 7경기 팀1", "준결승 7경기 팀2"),
+            m8: createInitialMatch("준결승 8경기 팀1", "준결승 8경기 팀2"),
+            m9: createInitialMatch("결승전 A팀", "결승전 B팀")
         };
 
         function toggleAuth() {
@@ -455,33 +472,41 @@
                 badge.innerHTML = '<i class="fa-solid fa-lock-open mr-1"></i>관리자 모드 (수정가능)';
                 btn.innerText = "로그아웃";
                 
-                relayBtn.disabled = false;
-                relayBtn.innerText = "기록 저장";
-                editTeamBtn.disabled = false;
-                btnA.disabled = false;
-                btnA.innerText = "점수 차감 적용";
-                btnB.disabled = false;
-                btnB.innerText = "점수 차감 적용";
-                editScoreA.disabled = false;
-                editScoreB.disabled = false;
+                if(relayBtn) { relayBtn.disabled = false; relayBtn.innerText = "기록 저장"; }
+                if(editTeamBtn) editTeamBtn.disabled = false;
+                if(btnA) { btnA.disabled = false; btnA.innerText = "라운드 점수 차감 적용"; }
+                if(btnB) { btnB.disabled = false; btnB.innerText = "라운드 점수 차감 적용"; }
+                if(editScoreA) editScoreA.disabled = false;
+                if(editScoreB) editScoreB.disabled = false;
             } else {
                 badge.className = "bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold";
                 badge.innerHTML = '<i class="fa-solid fa-lock mr-1"></i>일반 모드 (조회전용)';
                 btn.innerText = "관리자 인증";
                 
-                relayBtn.disabled = true;
-                relayBtn.innerText = "기록 저장 (관리자 전용)";
-                editTeamBtn.disabled = true;
-                btnA.disabled = true;
-                btnA.innerText = "점수 차감 (관리자 전용)";
-                btnB.disabled = true;
-                btnB.innerText = "점수 차감 (관리자 전용)";
-                editScoreA.disabled = true;
-                editScoreB.disabled = true;
+                if(relayBtn) { relayBtn.disabled = true; relayBtn.innerText = "기록 저장 (관리자 전용)"; }
+                if(editTeamBtn) editTeamBtn.disabled = true;
+                if(btnA) { btnA.disabled = true; btnA.innerText = "라운드 점수 차감 (관리자 전용)"; }
+                if(btnB) { btnB.disabled = true; btnB.innerText = "라운드 점수 차감 (관리자 전용)"; }
+                if(editScoreA) editScoreA.disabled = true;
+                if(editScoreB) editScoreB.disabled = true;
             }
             window.renderOverallRank();
             window.renderBracketResultsTable();
             window.load501Match();
+        }
+
+        function switchTab(tabId) {
+            ['dashboard', 'relay', 'game501', 'bracket'].forEach(id => {
+                const sec = document.getElementById(`sec-${id}`);
+                const tab = document.getElementById(`tab-${id}`);
+                if (sec) sec.classList.add('hidden');
+                if (tab) tab.classList.remove('active-tab');
+            });
+
+            const activeSec = document.getElementById(`sec-${tabId}`);
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            if (activeSec) activeSec.classList.remove('hidden');
+            if (activeTab) activeTab.classList.add('active-tab');
         }
 
         function saveGame2Score(cls) {
@@ -499,8 +524,8 @@
 
             let classList = [];
             for (let i = 1; i <= 5; i++) {
-                const rScore = window.relayData[i].total;
-                const g2Score = window.game2Scores[i];
+                const rScore = window.relayData[i] ? window.relayData[i].total : 0;
+                const g2Score = window.game2Scores[i] || 0;
                 const grandTotal = rScore + g2Score;
                 classList.push({ cls: i, rScore, g2Score, grandTotal });
             }
@@ -520,60 +545,16 @@
                                 <button onclick="saveGame2Score(${item.cls})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs font-bold disabled:bg-gray-300 disabled:cursor-not-allowed" ${isAdmin ? '' : 'disabled'}>저장</button>
                             </div>
                         </td>
-                        <td class="p-3 text-red-600 font-black text-lg">${item.grandTotal}점</td>
+                        <td class="p-3 font-extrabold text-red-600 text-lg">${item.grandTotal}점</td>
                     </tr>
                 `;
             });
         };
 
-        function editTeamNames() {
-            if (!isAdmin) return;
-            const matchKey = document.getElementById('select-501-match').value;
-            const match = window.match501Scores[matchKey];
-
-            const newNameA = prompt("팀 A의 새 이름을 입력하세요:", match.nameA);
-            if (newNameA !== null && newNameA.trim() !== "") {
-                match.nameA = newNameA.trim();
-            }
-
-            const newNameB = prompt("팀 B의 새 이름을 입력하세요:", match.nameB);
-            if (newNameB !== null && newNameB.trim() !== "") {
-                match.nameB = newNameB.trim();
-            }
-
-            window.saveToFirestore();
-        }
-
-        function editDirectScore(team) {
-            if (!isAdmin) return;
-            const matchKey = document.getElementById('select-501-match').value;
-            const match = window.match501Scores[matchKey];
-            const current = match[`score${team}`];
-
-            const input = prompt(`팀 ${team}의 남은 점수를 직접 입력하세요 (현재: ${current}점):`, current);
-            if (input !== null) {
-                const val = parseInt(input);
-                if (!isNaN(val) && val >= 0) {
-                    match[`score${team}`] = val;
-                    window.saveToFirestore();
-                } else {
-                    alert("올바른 숫자를 입력해주세요.");
-                }
-            }
-        }
-
-        function switchTab(tabName) {
-            document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-tab'));
-            
-            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
-            document.getElementById(`tab-${tabName}`).classList.add('active-tab');
-        }
-
         function saveRelayData(e) {
             e.preventDefault();
             if (!isAdmin) return;
-            
+
             const cls = document.getElementById('relay-class').value;
             const normal = parseInt(document.getElementById('relay-normal').value) || 0;
             const bull = parseInt(document.getElementById('relay-bull').value) || 0;
@@ -584,142 +565,192 @@
 
             window.relayData[cls] = { normal, bull, time, total };
             window.saveToFirestore();
-            alert(`${cls}반 릴레이 기록이 성공적으로 저장되었습니다.`);
+            window.renderRelayTable();
+            window.renderOverallRank();
+            alert(`${cls}반 릴레이 기록이 저장되었습니다.`);
         }
 
         window.renderRelayTable = function() {
             const tbody = document.getElementById('relay-score-table');
             if(!tbody) return;
             tbody.innerHTML = '';
-            for(let i=1; i<=5; i++) {
-                const d = window.relayData[i];
-                const timeBonus = Math.max(0, 80 - d.time);
+
+            for (let i = 1; i <= 5; i++) {
+                const data = window.relayData[i] || { normal: 0, bull: 0, time: 80, total: 0 };
+                const timeBonus = Math.max(0, 80 - data.time);
+
                 tbody.innerHTML += `
-                    <tr>
+                    <tr class="hover:bg-slate-50">
                         <td class="p-2 font-bold">${i}반</td>
-                        <td class="p-2">${d.normal}</td>
-                        <td class="p-2">${d.bull} (${d.bull*3})</td>
-                        <td class="p-2">+${timeBonus}</td>
-                        <td class="p-2 font-bold text-indigo-600">${d.total}</td>
+                        <td class="p-2">${data.normal}</td>
+                        <td class="p-2">${data.bull} (x3 = ${data.bull * 3})</td>
+                        <td class="p-2">${data.time}초 (+${timeBonus})</td>
+                        <td class="p-2 font-extrabold text-indigo-600">${data.total}점</td>
                     </tr>
                 `;
             }
         };
 
-        function recalculate501(matchKey, team) {
-            const match = window.match501Scores[matchKey];
-            const history = match[`history${team}`];
-            let currentRemain = 501;
-
-            history.forEach(row => {
-                const rawSum = row.d1 + row.d2 + row.d3;
-                if (currentRemain - rawSum < 0) {
-                    row.bust = true;
-                    row.sum = 0;
-                    row.remain = currentRemain;
-                } else {
-                    row.bust = false;
-                    row.sum = rawSum;
-                    currentRemain -= rawSum;
-                    row.remain = currentRemain;
-                }
-            });
-
-            match[`score${team}`] = currentRemain;
-        }
-
         window.load501Match = function() {
             const matchKey = document.getElementById('select-501-match').value;
-            const match = window.match501Scores[matchKey];
-            
-            document.getElementById('teamA-name').innerText = match.nameA;
-            document.getElementById('teamB-name').innerText = match.nameB;
-            document.getElementById('teamA-score').innerText = match.scoreA;
-            document.getElementById('teamB-score').innerText = match.scoreB;
+            const matchData = window.match501Scores[matchKey];
+            if (!matchData) return;
 
-            document.getElementById('teamA-round-label').innerText = `현재 ${match.historyA.length + 1}라운드`;
-            document.getElementById('teamB-round-label').innerText = `현재 ${match.historyB.length + 1}라운드`;
+            document.getElementById('teamA-name').innerText = matchData.nameA;
+            document.getElementById('teamB-name').innerText = matchData.nameB;
+            document.getElementById('teamA-score').innerText = matchData.scoreA;
+            document.getElementById('teamB-score').innerText = matchData.scoreB;
 
-            renderHistoryTable('A', match.historyA);
-            renderHistoryTable('B', match.historyB);
+            const pA = matchData.playersA || ["1번선수", "2번선수", "3번선수"];
+            const pB = matchData.playersB || ["1번선수", "2번선수", "3번선수"];
+
+            document.getElementById('teamA-players-list').innerText = `순서: 1발(${pA[0]}), 2발(${pA[1]}), 3발(${pA[2]})`;
+            document.getElementById('teamB-players-list').innerText = `순서: 1발(${pB[0]}), 2발(${pB[1]}), 3발(${pB[2]})`;
+
+            // 입력 라벨에 선수 이름 매핑
+            document.getElementById('teamA-p1-label').innerText = `1발 (${pA[0]})`;
+            document.getElementById('teamA-p2-label').innerText = `2발 (${pA[1]})`;
+            document.getElementById('teamA-p3-label').innerText = `3발 (${pA[2]})`;
+
+            document.getElementById('teamB-p1-label').innerText = `1발 (${pB[0]})`;
+            document.getElementById('teamB-p2-label').innerText = `2발 (${pB[1]})`;
+            document.getElementById('teamB-p3-label').innerText = `3발 (${pB[2]})`;
+
+            const roundA = matchData.historyA.length + 1;
+            const roundB = matchData.historyB.length + 1;
+
+            document.getElementById('teamA-round-label').innerText = `현재 ${roundA}라운드`;
+            document.getElementById('teamB-round-label').innerText = `현재 ${roundB}라운드`;
+
+            renderHistory('A', matchData.historyA);
+            renderHistory('B', matchData.historyB);
         };
 
-        function submit501Turn(team) {
-            if (!isAdmin) return;
-            const matchKey = document.getElementById('select-501-match').value;
-            const match = window.match501Scores[matchKey];
-
-            const player = document.getElementById(`team${team}-player`).value.trim() || "-";
-            const d1 = parseInt(document.getElementById(`team${team}-d1`).value) || 0;
-            const d2 = parseInt(document.getElementById(`team${team}-d2`).value) || 0;
-            const d3 = parseInt(document.getElementById(`team${team}-d3`).value) || 0;
-
-            match[`history${team}`].push({ player, d1, d2, d3, sum: 0, remain: 0, bust: false });
-            recalculate501(matchKey, team);
-
-            document.getElementById(`team${team}-player`).value = '';
-            document.getElementById(`team${team}-d1`).value = '';
-            document.getElementById(`team${team}-d2`).value = '';
-            document.getElementById(`team${team}-d3`).value = '';
-
-            window.saveToFirestore();
-        }
-
-        function editRoundScore(team, index) {
-            if (!isAdmin) return;
-            const matchKey = document.getElementById('select-501-match').value;
-            const match = window.match501Scores[matchKey];
-            const item = match[`history${team}`][index];
-
-            const input = prompt(`선수명, 1발, 2발, 3발 점수를 쉼표(,)로 구분하여 입력하세요:`, `${item.player || '-'},${item.d1},${item.d2},${item.d3}`);
-            if (input !== null) {
-                const parts = input.split(',').map(s => s.trim());
-                if (parts.length === 4) {
-                    item.player = parts[0] || "-";
-                    item.d1 = parseInt(parts[1]) || 0;
-                    item.d2 = parseInt(parts[2]) || 0;
-                    item.d3 = parseInt(parts[3]) || 0;
-
-                    recalculate501(matchKey, team);
-                    window.saveToFirestore();
-                } else {
-                    alert("선수명과 점수 3개를 쉼표로 구분해 입력해주세요. (예: 홍길동,20,15,10)");
-                }
-            }
-        }
-
-        function deleteRoundScore(team, index) {
-            if (!isAdmin) return;
-            if (confirm(`${index + 1}라운드 내역을 삭제하시겠습니까?`)) {
-                const matchKey = document.getElementById('select-501-match').value;
-                window.match501Scores[matchKey][`history${team}`].splice(index, 1);
-                
-                recalculate501(matchKey, team);
-                window.saveToFirestore();
-            }
-        }
-
-        function renderHistoryTable(team, history) {
+        function renderHistory(team, history) {
             const tbody = document.getElementById(`team${team}-history`);
             if(!tbody) return;
             tbody.innerHTML = '';
-            history.forEach((row, idx) => {
+
+            history.forEach((item, index) => {
                 tbody.innerHTML += `
-                    <tr class="${row.bust ? 'bg-red-50 text-red-600' : ''}">
-                        <td class="p-1 font-semibold">${idx + 1}</td>
-                        <td class="p-1 font-bold text-gray-700">${row.player || '-'}</td>
-                        <td class="p-1">${row.d1}</td>
-                        <td class="p-1">${row.d2}</td>
-                        <td class="p-1">${row.d3}</td>
-                        <td class="p-1 font-bold">${row.bust ? 'Bust' : row.sum}</td>
-                        <td class="p-1 font-extrabold text-indigo-700">${row.remain}</td>
-                        <td class="p-1 whitespace-nowrap">
-                            <button onclick="editRoundScore('${team}', ${idx})" class="bg-amber-500 text-white px-1 py-0.5 rounded text-[10px] hover:bg-amber-600 mr-1 disabled:opacity-40 disabled:cursor-not-allowed" ${isAdmin ? '' : 'disabled'}>수정</button>
-                            <button onclick="deleteRoundScore('${team}', ${idx})" class="bg-red-500 text-white px-1 py-0.5 rounded text-[10px] hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed" ${isAdmin ? '' : 'disabled'}>삭제</button>
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-1 font-bold">${index + 1}</td>
+                        <td class="p-1">${item.d1}</td>
+                        <td class="p-1">${item.d2}</td>
+                        <td class="p-1">${item.d3}</td>
+                        <td class="p-1 font-semibold text-blue-600">-${item.sum}</td>
+                        <td class="p-1 font-bold text-red-600">${item.remain}</td>
+                        <td class="p-1">
+                            <button onclick="delete501Turn('${team}', ${index})" class="text-red-500 hover:text-red-700 disabled:text-gray-300" ${isAdmin ? '' : 'disabled'}>
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
                         </td>
                     </tr>
                 `;
             });
+        }
+
+        function submit501Turn(team) {
+            if (!isAdmin) return;
+            const matchKey = document.getElementById('select-501-match').value;
+            const matchData = window.match501Scores[matchKey];
+
+            const d1Input = document.getElementById(`team${team}-d1`);
+            const d2Input = document.getElementById(`team${team}-d2`);
+            const d3Input = document.getElementById(`team${team}-d3`);
+
+            const d1 = parseInt(d1Input.value) || 0;
+            const d2 = parseInt(d2Input.value) || 0;
+            const d3 = parseInt(d3Input.value) || 0;
+            const sum = d1 + d2 + d3;
+
+            let currentScore = team === 'A' ? matchData.scoreA : matchData.scoreB;
+            const history = team === 'A' ? matchData.historyA : matchData.historyB;
+
+            if (currentScore - sum < 0) {
+                alert("남은 점수보다 큰 점수를 차감할 수 없습니다 (버스트).");
+                return;
+            }
+
+            const newRemain = currentScore - sum;
+            if (team === 'A') matchData.scoreA = newRemain;
+            else matchData.scoreB = newRemain;
+
+            history.push({ d1, d2, d3, sum, remain: newRemain });
+
+            d1Input.value = '';
+            d2Input.value = '';
+            d3Input.value = '';
+
+            window.saveToFirestore();
+            window.load501Match();
+
+            if (newRemain === 0) {
+                alert(`🎉 ${team === 'A' ? matchData.nameA : matchData.nameB} 팀 승리!`);
+            }
+        }
+
+        function delete501Turn(team, index) {
+            if (!isAdmin) return;
+            const matchKey = document.getElementById('select-501-match').value;
+            const matchData = window.match501Scores[matchKey];
+
+            const history = team === 'A' ? matchData.historyA : matchData.historyB;
+            history.splice(index, 1);
+
+            let score = 501;
+            for (let i = 0; i < history.length; i++) {
+                score -= history[i].sum;
+                history[i].remain = score;
+            }
+
+            if (team === 'A') matchData.scoreA = score;
+            else matchData.scoreB = score;
+
+            window.saveToFirestore();
+            window.load501Match();
+        }
+
+        function editDirectScore(team) {
+            if (!isAdmin) return;
+            const matchKey = document.getElementById('select-501-match').value;
+            const matchData = window.match501Scores[matchKey];
+
+            const current = team === 'A' ? matchData.scoreA : matchData.scoreB;
+            const input = prompt("수정할 남은 점수를 입력하세요:", current);
+
+            if (input !== null && !isNaN(input)) {
+                const val = parseInt(input);
+                if (team === 'A') matchData.scoreA = val;
+                else matchData.scoreB = val;
+
+                window.saveToFirestore();
+                window.load501Match();
+            }
+        }
+
+        function editTeamAndPlayers() {
+            if (!isAdmin) return;
+            const matchKey = document.getElementById('select-501-match').value;
+            const matchData = window.match501Scores[matchKey];
+
+            const nameA = prompt("팀 A 이름을 입력하세요:", matchData.nameA) || matchData.nameA;
+            const playersAStr = prompt("팀 A 선수 3명을 순서대로 쉼표로 구분해 입력하세요 (예: 홍길동, 김철수, 이영희):", matchData.playersA.join(', '));
+            const nameB = prompt("팀 B 이름을 입력하세요:", matchData.nameB) || matchData.nameB;
+            const playersBStr = prompt("팀 B 선수 3명을 순서대로 쉼표로 구분해 입력하세요 (예: 박지성, 손흥민, 이강인):", matchData.playersB.join(', '));
+
+            matchData.nameA = nameA;
+            matchData.nameB = nameB;
+
+            if (playersAStr) {
+                matchData.playersA = playersAStr.split(',').map(s => s.trim()).filter(s => s);
+            }
+            if (playersBStr) {
+                matchData.playersB = playersBStr.split(',').map(s => s.trim()).filter(s => s);
+            }
+
+            window.saveToFirestore();
+            window.load501Match();
         }
 
         window.renderBracketResultsTable = function() {
@@ -727,21 +758,21 @@
             if (!tbody) return;
             tbody.innerHTML = '';
 
-            // 고정 순서 배열(MATCH_KEYS)을 사용하여 순서가 절대 바뀌지 않도록 처리
             MATCH_KEYS.forEach(key => {
-                const res = window.bracketMatchResults[key];
-                if (!res) return;
+                const res = window.bracketMatchResults[key] || { label: key, winner: "", loser: "" };
                 tbody.innerHTML += `
-                    <tr>
-                        <td class="p-2 font-bold text-indigo-900">${res.label}</td>
-                        <td class="p-2">
-                            <input type="text" id="winner-${key}" value="${res.winner || ''}" placeholder="예: 1반" class="p-1 border rounded text-center text-sm w-32" ${isAdmin ? '' : 'disabled'}>
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-bold text-gray-800">${res.label}</td>
+                        <td class="p-3">
+                            <input type="text" id="bracket-winner-${key}" value="${res.winner}" placeholder="승리 학급" class="w-32 p-1 border rounded text-center text-sm font-semibold text-blue-700" ${isAdmin ? '' : 'disabled'}>
                         </td>
-                        <td class="p-2">
-                            <input type="text" id="loser-${key}" value="${res.loser || ''}" placeholder="예: 2반" class="p-1 border rounded text-center text-sm w-32" ${isAdmin ? '' : 'disabled'}>
+                        <td class="p-3">
+                            <input type="text" id="bracket-loser-${key}" value="${res.loser}" placeholder="패배 학급" class="w-32 p-1 border rounded text-center text-sm text-gray-600" ${isAdmin ? '' : 'disabled'}>
                         </td>
-                        <td class="p-2">
-                            <button onclick="saveBracketMatchResult('${key}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold disabled:bg-gray-300 disabled:cursor-not-allowed" ${isAdmin ? '' : 'disabled'}>저장</button>
+                        <td class="p-3">
+                            <button onclick="saveBracketMatchResult('${key}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold disabled:bg-gray-300 disabled:cursor-not-allowed" ${isAdmin ? '' : 'disabled'}>
+                                저장
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -750,17 +781,20 @@
 
         function saveBracketMatchResult(key) {
             if (!isAdmin) return;
-            const w = document.getElementById(`winner-${key}`).value.trim();
-            const l = document.getElementById(`loser-${key}`).value.trim();
+            const winner = document.getElementById(`bracket-winner-${key}`).value;
+            const loser = document.getElementById(`bracket-loser-${key}`).value;
 
-            window.bracketMatchResults[key].winner = w;
-            window.bracketMatchResults[key].loser = l;
+            window.bracketMatchResults[key].winner = winner;
+            window.bracketMatchResults[key].loser = loser;
 
             window.saveToFirestore();
             alert(`${window.bracketMatchResults[key].label} 결과가 저장되었습니다.`);
         }
 
-        updateAuthUI();
+        // 초기화 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            updateAuthUI();
+        });
     </script>
 </body>
 </html>
