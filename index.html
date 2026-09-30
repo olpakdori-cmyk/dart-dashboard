@@ -38,7 +38,15 @@
                 if (data.relayData) window.relayData = data.relayData;
                 if (data.game2Scores) window.game2Scores = data.game2Scores;
                 if (data.bracketMatchResults) window.bracketMatchResults = data.bracketMatchResults;
-                if (data.match501Scores) window.match501Scores = data.match501Scores;
+                if (data.match501Scores) {
+                    // 데이터 병합 시 기존 기본 구조가 유지되도록 복사 처리
+                    Object.keys(data.match501Scores).forEach(key => {
+                        window.match501Scores[key] = {
+                            ...window.match501Scores[key],
+                            ...data.match501Scores[key]
+                        };
+                    });
+                }
 
                 if (window.renderRelayTable) window.renderRelayTable();
                 if (window.renderOverallRank) window.renderOverallRank();
@@ -54,7 +62,7 @@
                     game2Scores: window.game2Scores,
                     bracketMatchResults: window.bracketMatchResults,
                     match501Scores: window.match501Scores
-                });
+                }, { merge: true });
             } catch (e) {
                 console.error("Firestore 저장 실패: ", e);
             }
@@ -596,13 +604,13 @@
             const matchData = window.match501Scores[matchKey];
             if (!matchData) return;
 
-            document.getElementById('teamA-name').innerText = matchData.nameA;
-            document.getElementById('teamB-name').innerText = matchData.nameB;
-            document.getElementById('teamA-score').innerText = matchData.scoreA;
-            document.getElementById('teamB-score').innerText = matchData.scoreB;
+            document.getElementById('teamA-name').innerText = matchData.nameA || "팀 A";
+            document.getElementById('teamB-name').innerText = matchData.nameB || "팀 B";
+            document.getElementById('teamA-score').innerText = matchData.scoreA !== undefined ? matchData.scoreA : 501;
+            document.getElementById('teamB-score').innerText = matchData.scoreB !== undefined ? matchData.scoreB : 501;
 
-            const pA = matchData.playersA || ["1번선수", "2번선수", "3번선수"];
-            const pB = matchData.playersB || ["1번선수", "2번선수", "3번선수"];
+            const pA = (matchData.playersA && matchData.playersA.length === 3) ? matchData.playersA : ["1번선수", "2번선수", "3번선수"];
+            const pB = (matchData.playersB && matchData.playersB.length === 3) ? matchData.playersB : ["1번선수", "2번선수", "3번선수"];
 
             document.getElementById('teamA-players-list').innerText = `순서: 1발(${pA[0]}), 2발(${pA[1]}), 3발(${pA[2]})`;
             document.getElementById('teamB-players-list').innerText = `순서: 1발(${pB[0]}), 2발(${pB[1]}), 3발(${pB[2]})`;
@@ -616,14 +624,14 @@
             document.getElementById('teamB-p2-label').innerText = `2발 (${pB[1]})`;
             document.getElementById('teamB-p3-label').innerText = `3발 (${pB[2]})`;
 
-            const roundA = matchData.historyA.length + 1;
-            const roundB = matchData.historyB.length + 1;
+            const roundA = (matchData.historyA ? matchData.historyA.length : 0) + 1;
+            const roundB = (matchData.historyB ? matchData.historyB.length : 0) + 1;
 
             document.getElementById('teamA-round-label').innerText = `현재 ${roundA}라운드`;
             document.getElementById('teamB-round-label').innerText = `현재 ${roundB}라운드`;
 
-            renderHistory('A', matchData.historyA);
-            renderHistory('B', matchData.historyB);
+            renderHistory('A', matchData.historyA || []);
+            renderHistory('B', matchData.historyB || []);
         };
 
         function renderHistory(team, history) {
@@ -665,6 +673,8 @@
             const sum = d1 + d2 + d3;
 
             let currentScore = team === 'A' ? matchData.scoreA : matchData.scoreB;
+            if (!matchData.historyA) matchData.historyA = [];
+            if (!matchData.historyB) matchData.historyB = [];
             const history = team === 'A' ? matchData.historyA : matchData.historyB;
 
             if (currentScore - sum < 0) {
@@ -719,7 +729,7 @@
             const current = team === 'A' ? matchData.scoreA : matchData.scoreB;
             const input = prompt("수정할 남은 점수를 입력하세요:", current);
 
-            if (input !== null && !isNaN(input)) {
+            if (input !== null && !isNaN(input) && input.trim() !== "") {
                 const val = parseInt(input);
                 if (team === 'A') matchData.scoreA = val;
                 else matchData.scoreB = val;
@@ -734,23 +744,43 @@
             const matchKey = document.getElementById('select-501-match').value;
             const matchData = window.match501Scores[matchKey];
 
-            const nameA = prompt("팀 A 이름을 입력하세요:", matchData.nameA) || matchData.nameA;
-            const playersAStr = prompt("팀 A 선수 3명을 순서대로 쉼표로 구분해 입력하세요 (예: 홍길동, 김철수, 이영희):", matchData.playersA.join(', '));
-            const nameB = prompt("팀 B 이름을 입력하세요:", matchData.nameB) || matchData.nameB;
-            const playersBStr = prompt("팀 B 선수 3명을 순서대로 쉼표로 구분해 입력하세요 (예: 박지성, 손흥민, 이강인):", matchData.playersB.join(', '));
+            const curPlayersA = (matchData.playersA && matchData.playersA.length === 3) ? matchData.playersA.join(', ') : "1번선수, 2번선수, 3번선수";
+            const curPlayersB = (matchData.playersB && matchData.playersB.length === 3) ? matchData.playersB.join(', ') : "1번선수, 2번선수, 3번선수";
 
-            matchData.nameA = nameA;
-            matchData.nameB = nameB;
+            const nameA = prompt("팀 A 이름을 입력하세요:", matchData.nameA || "팀 A");
+            if (nameA === null) return;
 
-            if (playersAStr) {
-                matchData.playersA = playersAStr.split(',').map(s => s.trim()).filter(s => s);
+            const playersAStr = prompt("팀 A 선수 3명을 순서대로 쉼표(,)로 구분해 입력하세요:", curPlayersA);
+            if (playersAStr === null) return;
+
+            const nameB = prompt("팀 B 이름을 입력하세요:", matchData.nameB || "팀 B");
+            if (nameB === null) return;
+
+            const playersBStr = prompt("팀 B 선수 3명을 순서대로 쉼표(,)로 구분해 입력하세요:", curPlayersB);
+            if (playersBStr === null) return;
+
+            matchData.nameA = nameA.trim() || "팀 A";
+            matchData.nameB = nameB.trim() || "팀 B";
+
+            const parsedA = playersAStr.split(',').map(s => s.trim()).filter(s => s !== "");
+            const parsedB = playersBStr.split(',').map(s => s.trim()).filter(s => s !== "");
+
+            if (parsedA.length === 3) {
+                matchData.playersA = parsedA;
+            } else {
+                alert("팀 A의 선수명 입력은 정확히 3명이어야 합니다. (기존 정보 유지)");
             }
-            if (playersBStr) {
-                matchData.playersB = playersBStr.split(',').map(s => s.trim()).filter(s => s);
+
+            if (parsedB.length === 3) {
+                matchData.playersB = parsedB;
+            } else {
+                alert("팀 B의 선수명 입력은 정확히 3명이어야 합니다. (기존 정보 유지)");
             }
 
-            window.saveToFirestore();
+            // 변경된 정보를 UI에 적용하고 데이터베이스에 동기화
             window.load501Match();
+            window.saveToFirestore();
+            alert("팀 및 선수 정보가 정상적으로 수정 및 저장되었습니다.");
         }
 
         window.renderBracketResultsTable = function() {
