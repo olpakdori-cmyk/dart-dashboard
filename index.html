@@ -10,6 +10,62 @@
     <style>
         .active-tab { border-bottom: 4px solid #3B82F6; color: #1D4ED8; font-weight: bold; }
     </style>
+
+    <!-- Firebase SDK (v9+ CDN) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 입력받으신 Firebase 키 설정
+        const firebaseConfig = {
+          apiKey: "AIzaSyBSdgqWrS9QNS6fpeg3JxFG4WDHVbtg6eE",
+          authDomain: "dart-scores-e4a3f.firebaseapp.com",
+          projectId: "dart-scores-e4a3f",
+          storageBucket: "dart-scores-e4a3f.firebasestorage.app",
+          messagingSenderId: "803233616646",
+          appId: "1:803233616646:web:facd49d2842d990a390487"
+        };
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 전역 객체 저장
+        window.db = db;
+        window.doc = doc;
+        window.setDoc = setDoc;
+
+        // 실시간 데이터 수신 (모든 접속자 화면에 실시간 자동 동기화)
+        onSnapshot(doc(db, "dart_tournament", "main_data"), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.relayData) window.relayData = data.relayData;
+                if (data.game2Scores) window.game2Scores = data.game2Scores;
+                if (data.bracketMatchResults) window.bracketMatchResults = data.bracketMatchResults;
+                if (data.match501Scores) window.match501Scores = data.match501Scores;
+
+                // UI 동기화
+                if (window.renderRelayTable) window.renderRelayTable();
+                if (window.renderOverallRank) window.renderOverallRank();
+                if (window.renderBracketResultsTable) window.renderBracketResultsTable();
+                if (window.load501Match) window.load501Match();
+            }
+        });
+
+        // Firestore에 데이터 저장하는 함수
+        window.saveToFirestore = async function() {
+            try {
+                await setDoc(doc(db, "dart_tournament", "main_data"), {
+                    relayData: window.relayData,
+                    game2Scores: window.game2Scores,
+                    bracketMatchResults: window.bracketMatchResults,
+                    match501Scores: window.match501Scores
+                });
+            } catch (e) {
+                console.error("Firestore 저장 실패: ", e);
+            }
+        };
+    </script>
 </head>
 <body class="bg-slate-100 font-sans min-h-screen">
 
@@ -17,7 +73,7 @@
     <header class="bg-indigo-900 text-white shadow-lg p-4">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-extrabold flex items-center gap-3">
-                <i class="fa-solid font-bullseye text-red-500 text-3xl"></i>
+                <i class="fa-solid fa-bullseye text-red-500 text-3xl"></i>
                 2026학년도 2학년 다트 대항전
             </h1>
             <div class="flex items-center gap-3">
@@ -73,7 +129,6 @@
                             </tr>
                         </thead>
                         <tbody id="overall-rank-table" class="divide-y text-gray-700 font-semibold">
-                            <!-- JS 연산 -->
                         </tbody>
                     </table>
                 </div>
@@ -83,7 +138,6 @@
         <!-- 2. 제1경기 : 다트 릴레이 -->
         <section id="sec-relay" class="hidden space-y-6">
             <div class="grid md:grid-cols-2 gap-6">
-                <!-- 입력 폼 -->
                 <div class="bg-white p-6 rounded-xl shadow">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">릴레이 기록 입력 (운영진용)</h2>
                     <form id="relay-form" class="space-y-4" onsubmit="saveRelayData(event)">
@@ -117,7 +171,6 @@
                     </form>
                 </div>
 
-                <!-- 릴레이 결과 리더보드 -->
                 <div class="bg-white p-6 rounded-xl shadow">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">릴레이 경기 결과</h2>
                     <table class="w-full text-center border-collapse">
@@ -131,7 +184,6 @@
                             </tr>
                         </thead>
                         <tbody id="relay-score-table" class="divide-y text-sm">
-                            <!-- JS 연산 -->
                         </tbody>
                     </table>
                 </div>
@@ -172,7 +224,6 @@
                 </div>
 
                 <div class="grid md:grid-cols-2 gap-8">
-                    <!-- 팀 A 카운터 및 라운드 입력 -->
                     <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
                         <div class="text-center">
                             <h3 id="teamA-name" class="text-xl font-bold text-indigo-900 mb-2">팀 A</h3>
@@ -185,7 +236,6 @@
                             <span id="teamA-round-label" class="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded font-bold mb-4">현재 1라운드</span>
                         </div>
 
-                        <!-- 턴 입력 폼 -->
                         <div class="bg-white p-4 rounded-lg border space-y-3 mb-4">
                             <h4 class="text-xs font-bold text-gray-600 border-b pb-1">이번 턴 3발 점수 입력</h4>
                             <div class="grid grid-cols-3 gap-2">
@@ -198,7 +248,6 @@
                             </button>
                         </div>
 
-                        <!-- 라운드 내역 히스토리 -->
                         <div class="overflow-y-auto max-h-48 border rounded bg-white">
                             <table class="w-full text-center text-xs">
                                 <thead class="bg-gray-100 sticky top-0">
@@ -213,13 +262,11 @@
                                     </tr>
                                 </thead>
                                 <tbody id="teamA-history" class="divide-y">
-                                    <!-- JS 업데이트 -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- 팀 B 카운터 및 라운드 입력 -->
                     <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
                         <div class="text-center">
                             <h3 id="teamB-name" class="text-xl font-bold text-indigo-900 mb-2">팀 B</h3>
@@ -232,7 +279,6 @@
                             <span id="teamB-round-label" class="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded font-bold mb-4">현재 1라운드</span>
                         </div>
 
-                        <!-- 턴 입력 폼 -->
                         <div class="bg-white p-4 rounded-lg border space-y-3 mb-4">
                             <h4 class="text-xs font-bold text-gray-600 border-b pb-1">이번 턴 3발 점수 입력</h4>
                             <div class="grid grid-cols-3 gap-2">
@@ -245,7 +291,6 @@
                             </button>
                         </div>
 
-                        <!-- 라운드 내역 히스토리 -->
                         <div class="overflow-y-auto max-h-48 border rounded bg-white">
                             <table class="w-full text-center text-xs">
                                 <thead class="bg-gray-100 sticky top-0">
@@ -260,7 +305,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="teamB-history" class="divide-y">
-                                    <!-- JS 업데이트 -->
                                 </tbody>
                             </table>
                         </div>
@@ -299,7 +343,6 @@
                     </div>
                 </div>
 
-                <!-- 경기별 승리/패배 반 기록 섹션 -->
                 <div class="border-t pt-6">
                     <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 경기 결과 기록 (승리 / 패배 학급)
@@ -315,7 +358,6 @@
                                 </tr>
                             </thead>
                             <tbody id="bracket-results-tbody" class="divide-y text-sm">
-                                <!-- JS에서 동적 생성 -->
                             </tbody>
                         </table>
                     </div>
@@ -330,8 +372,8 @@
         let isAdmin = false;
         const ADMIN_CODE = "오주중123";
 
-        // 데이터 세팅
-        let relayData = {
+        // 초기 기본 데이터 구조
+        window.relayData = {
             1: { normal: 0, bull: 0, time: 80, total: 0 },
             2: { normal: 0, bull: 0, time: 80, total: 0 },
             3: { normal: 0, bull: 0, time: 80, total: 0 },
@@ -339,11 +381,9 @@
             5: { normal: 0, bull: 0, time: 80, total: 0 }
         };
 
-        // 제2경기 직접 입력 점수 저장 객체
-        let game2Scores = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        window.game2Scores = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
-        // 대진표 승/패 기록 데이터
-        let bracketMatchResults = {
+        window.bracketMatchResults = {
             "m1": { label: "예선 1경기", winner: "", loser: "" },
             "m2": { label: "예선 2경기", winner: "", loser: "" },
             "m3": { label: "예선 3경기", winner: "", loser: "" },
@@ -355,7 +395,7 @@
             "m9": { label: "최종 결승전", winner: "", loser: "" }
         };
 
-        let match501Scores = {
+        window.match501Scores = {
             m1: { nameA: "1조 예선1 A팀", nameB: "1조 예선1 B팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
             m2: { nameA: "2조 예선2 A팀", nameB: "2조 예선2 B팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
             m3: { nameA: "1조 예선3 C팀", nameB: "1조 예선3 D팀", scoreA: 501, scoreB: 501, historyA: [], historyB: [] },
@@ -377,7 +417,7 @@
                 if (input === ADMIN_CODE) {
                     isAdmin = true;
                     updateAuthUI();
-                    alert("관리자 인증되었습니다. 내용 수정을 진행하실 수 있습니다.");
+                    alert("관리자 인증되었습니다.");
                 } else if (input !== null) {
                     alert("관리자 코드가 일치하지 않습니다.");
                 }
@@ -424,27 +464,28 @@
                 editScoreA.disabled = true;
                 editScoreB.disabled = true;
             }
-            renderOverallRank();
-            renderBracketResultsTable();
-            load501Match();
+            window.renderOverallRank();
+            window.renderBracketResultsTable();
+            window.load501Match();
         }
 
         function saveGame2Score(cls) {
             if (!isAdmin) return;
             const scoreVal = parseInt(document.getElementById(`game2-input-${cls}`).value) || 0;
-            game2Scores[cls] = scoreVal;
-            renderOverallRank();
+            window.game2Scores[cls] = scoreVal;
+            window.saveToFirestore();
             alert(`${cls}반의 제2경기 점수(${scoreVal}점)가 적용되었습니다.`);
         }
 
-        function renderOverallRank() {
+        window.renderOverallRank = function() {
             const tbody = document.getElementById('overall-rank-table');
+            if(!tbody) return;
             tbody.innerHTML = '';
 
             let classList = [];
             for (let i = 1; i <= 5; i++) {
-                const rScore = relayData[i].total;
-                const g2Score = game2Scores[i];
+                const rScore = window.relayData[i].total;
+                const g2Score = window.game2Scores[i];
                 const grandTotal = rScore + g2Score;
                 classList.push({ cls: i, rScore, g2Score, grandTotal });
             }
@@ -468,12 +509,12 @@
                     </tr>
                 `;
             });
-        }
+        };
 
         function editTeamNames() {
             if (!isAdmin) return;
             const matchKey = document.getElementById('select-501-match').value;
-            const match = match501Scores[matchKey];
+            const match = window.match501Scores[matchKey];
 
             const newNameA = prompt("팀 A의 새 이름을 입력하세요:", match.nameA);
             if (newNameA !== null && newNameA.trim() !== "") {
@@ -485,13 +526,13 @@
                 match.nameB = newNameB.trim();
             }
 
-            load501Match();
+            window.saveToFirestore();
         }
 
         function editDirectScore(team) {
             if (!isAdmin) return;
             const matchKey = document.getElementById('select-501-match').value;
-            const match = match501Scores[matchKey];
+            const match = window.match501Scores[matchKey];
             const current = match[`score${team}`];
 
             const input = prompt(`팀 ${team}의 남은 점수를 직접 입력하세요 (현재: ${current}점):`, current);
@@ -499,7 +540,7 @@
                 const val = parseInt(input);
                 if (!isNaN(val) && val >= 0) {
                     match[`score${team}`] = val;
-                    load501Match();
+                    window.saveToFirestore();
                 } else {
                     alert("올바른 숫자를 입력해주세요.");
                 }
@@ -526,17 +567,17 @@
             const timeBonus = Math.max(0, 80 - time);
             const total = normal + (bull * 3) + timeBonus;
 
-            relayData[cls] = { normal, bull, time, total };
-            renderRelayTable();
-            renderOverallRank();
+            window.relayData[cls] = { normal, bull, time, total };
+            window.saveToFirestore();
             alert(`${cls}반 릴레이 기록이 성공적으로 저장되었습니다.`);
         }
 
-        function renderRelayTable() {
+        window.renderRelayTable = function() {
             const tbody = document.getElementById('relay-score-table');
+            if(!tbody) return;
             tbody.innerHTML = '';
             for(let i=1; i<=5; i++) {
-                const d = relayData[i];
+                const d = window.relayData[i];
                 const timeBonus = Math.max(0, 80 - d.time);
                 tbody.innerHTML += `
                     <tr>
@@ -548,11 +589,10 @@
                     </tr>
                 `;
             }
-        }
+        };
 
-        // 전체 점수 및 버스트 재계산 함수
         function recalculate501(matchKey, team) {
-            const match = match501Scores[matchKey];
+            const match = window.match501Scores[matchKey];
             const history = match[`history${team}`];
             let currentRemain = 501;
 
@@ -573,9 +613,9 @@
             match[`score${team}`] = currentRemain;
         }
 
-        function load501Match() {
+        window.load501Match = function() {
             const matchKey = document.getElementById('select-501-match').value;
-            const match = match501Scores[matchKey];
+            const match = window.match501Scores[matchKey];
             
             document.getElementById('teamA-name').innerText = match.nameA;
             document.getElementById('teamB-name').innerText = match.nameB;
@@ -587,12 +627,12 @@
 
             renderHistoryTable('A', match.historyA);
             renderHistoryTable('B', match.historyB);
-        }
+        };
 
         function submit501Turn(team) {
             if (!isAdmin) return;
             const matchKey = document.getElementById('select-501-match').value;
-            const match = match501Scores[matchKey];
+            const match = window.match501Scores[matchKey];
 
             const d1 = parseInt(document.getElementById(`team${team}-d1`).value) || 0;
             const d2 = parseInt(document.getElementById(`team${team}-d2`).value) || 0;
@@ -605,17 +645,13 @@
             document.getElementById(`team${team}-d2`).value = '';
             document.getElementById(`team${team}-d3`).value = '';
 
-            load501Match();
-
-            if (match[`score${team}`] === 0) {
-                alert(`🎉 축하합니다! ${match[`name${team}`]}이 승리했습니다!`);
-            }
+            window.saveToFirestore();
         }
 
         function editRoundScore(team, index) {
             if (!isAdmin) return;
             const matchKey = document.getElementById('select-501-match').value;
-            const match = match501Scores[matchKey];
+            const match = window.match501Scores[matchKey];
             const item = match[`history${team}`][index];
 
             const input = prompt(`${index + 1}라운드의 1발, 2발, 3발 점수를 쉼표(,)로 구분하여 입력하세요:`, `${item.d1},${item.d2},${item.d3}`);
@@ -627,10 +663,9 @@
                     item.d3 = parts[2];
 
                     recalculate501(matchKey, team);
-                    load501Match();
-                    alert(`${index + 1}라운드 점수가 수정되었습니다.`);
+                    window.saveToFirestore();
                 } else {
-                    alert("3개의 숫자를 쉼표로 구분하여 정확히 입력해주세요. (예: 20,15,10)");
+                    alert("3개의 숫자를 쉼표로 구분하여 입력해주세요. (예: 20,15,10)");
                 }
             }
         }
@@ -639,15 +674,16 @@
             if (!isAdmin) return;
             if (confirm(`${index + 1}라운드 내역을 삭제하시겠습니까?`)) {
                 const matchKey = document.getElementById('select-501-match').value;
-                match501Scores[matchKey][`history${team}`].splice(index, 1);
+                window.match501Scores[matchKey][`history${team}`].splice(index, 1);
                 
                 recalculate501(matchKey, team);
-                load501Match();
+                window.saveToFirestore();
             }
         }
 
         function renderHistoryTable(team, history) {
             const tbody = document.getElementById(`team${team}-history`);
+            if(!tbody) return;
             tbody.innerHTML = '';
             history.forEach((row, idx) => {
                 tbody.innerHTML += `
@@ -667,13 +703,13 @@
             });
         }
 
-        function renderBracketResultsTable() {
+        window.renderBracketResultsTable = function() {
             const tbody = document.getElementById('bracket-results-tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
 
-            Object.keys(bracketMatchResults).forEach(key => {
-                const res = bracketMatchResults[key];
+            Object.keys(window.bracketMatchResults).forEach(key => {
+                const res = window.bracketMatchResults[key];
                 tbody.innerHTML += `
                     <tr>
                         <td class="p-2 font-bold text-indigo-900">${res.label}</td>
@@ -689,22 +725,20 @@
                     </tr>
                 `;
             });
-        }
+        };
 
         function saveBracketMatchResult(key) {
             if (!isAdmin) return;
             const w = document.getElementById(`winner-${key}`).value.trim();
             const l = document.getElementById(`loser-${key}`).value.trim();
 
-            bracketMatchResults[key].winner = w;
-            bracketMatchResults[key].loser = l;
+            window.bracketMatchResults[key].winner = w;
+            window.bracketMatchResults[key].loser = l;
 
-            alert(`${bracketMatchResults[key].label} 결과가 저장되었습니다.`);
+            window.saveToFirestore();
+            alert(`${window.bracketMatchResults[key].label} 결과가 저장되었습니다.`);
         }
 
-        // 초기화
-        renderRelayTable();
-        load501Match();
         updateAuthUI();
     </script>
 </body>
